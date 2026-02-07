@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">WallApp</string>
+    <string name="loading">Loading…</string>
+    <string name="error_loading">Error loading page</string>
+    <string name="no_internet">No internet connection</string>
+    <string name="retry">Retry</string>
+    <string name="exit">Exit</string>
+    <string name="download_started">Download started</string>
+    <string name="download_failed">Download failed</string>
+    <string name="permission_required">Storage permission required for downloading wallpapers</string>
+</resources>

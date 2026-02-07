@@ -1,0 +1,31 @@
+R_DEF: Internal format may change without notice
+local
+color accent
+color black
+color gray
+color gray_dark
+color gray_light
+color primary
+color primary_dark
+color white
+id progressBar
+id splashLogo
+id swipeRefreshLayout
+id webView
+layout activity_main
+layout activity_splash
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string download_failed
+string download_started
+string error_loading
+string exit
+string loading
+string no_internet
+string permission_required
+string retry
+style Theme.Splash
+style Theme.WallApp
+xml file_paths
+xml network_security_config

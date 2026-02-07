@@ -1,0 +1,212 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.wallapp"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="21"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:5:5-67
+11-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:5:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:6:5-79
+12-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:6:22-76
+13    <uses-permission
+13-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:7:5-8:38
+14        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+14-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:7:22-78
+15        android:maxSdkVersion="28" />
+15-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:8:9-35
+16    <uses-permission
+16-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:9:5-10:38
+17        android:name="android.permission.READ_EXTERNAL_STORAGE"
+17-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:9:22-77
+18        android:maxSdkVersion="32" />
+18-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:10:9-35
+19    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+19-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:11:5-76
+19-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:11:22-73
+20    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+20-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:12:5-72
+20-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:12:22-69
+21
+22    <permission
+22-->[androidx.core:core:1.9.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/faf4c17a81dea946f99a5cdd7e9bc7a1/transformed/core-1.9.0/AndroidManifest.xml:22:5-24:47
+23        android:name="com.wallapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+23-->[androidx.core:core:1.9.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/faf4c17a81dea946f99a5cdd7e9bc7a1/transformed/core-1.9.0/AndroidManifest.xml:23:9-81
+24        android:protectionLevel="signature" />
+24-->[androidx.core:core:1.9.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/faf4c17a81dea946f99a5cdd7e9bc7a1/transformed/core-1.9.0/AndroidManifest.xml:24:9-44
+25
+26    <uses-permission android:name="com.wallapp.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+26-->[androidx.core:core:1.9.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/faf4c17a81dea946f99a5cdd7e9bc7a1/transformed/core-1.9.0/AndroidManifest.xml:26:5-97
+26-->[androidx.core:core:1.9.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/faf4c17a81dea946f99a5cdd7e9bc7a1/transformed/core-1.9.0/AndroidManifest.xml:26:22-94
+27
+28    <application
+28-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:14:5-63:19
+29        android:allowBackup="true"
+29-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:15:9-35
+30        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+30-->[androidx.core:core:1.9.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/faf4c17a81dea946f99a5cdd7e9bc7a1/transformed/core-1.9.0/AndroidManifest.xml:28:18-86
+31        android:debuggable="true"
+32        android:extractNativeLibs="true"
+33        android:hardwareAccelerated="true"
+33-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:22:9-43
+34        android:icon="@mipmap/ic_launcher"
+34-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:16:9-43
+35        android:label="@string/app_name"
+35-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:17:9-41
+36        android:networkSecurityConfig="@xml/network_security_config"
+36-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:23:9-69
+37        android:roundIcon="@mipmap/ic_launcher_round"
+37-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:18:9-54
+38        android:supportsRtl="true"
+38-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:19:9-35
+39        android:theme="@style/Theme.WallApp"
+39-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:20:9-45
+40        android:usesCleartextTraffic="true" >
+40-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:21:9-44
+41        <activity
+41-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:26:9-45:20
+42            android:name="com.wallapp.MainActivity"
+42-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:27:13-41
+43            android:configChanges="orientation|screenSize|keyboardHidden"
+43-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:29:13-74
+44            android:exported="true"
+44-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:28:13-36
+45            android:screenOrientation="portrait"
+45-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:31:13-49
+46            android:windowSoftInputMode="adjustResize" >
+46-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:30:13-55
+47            <intent-filter>
+47-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:32:13-35:29
+48                <action android:name="android.intent.action.MAIN" />
+48-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:33:17-69
+48-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:33:25-66
+49
+50                <category android:name="android.intent.category.LAUNCHER" />
+50-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:34:17-77
+50-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:34:27-74
+51            </intent-filter>
+52
+53            <!-- Deep linking support -->
+54            <intent-filter android:autoVerify="true" >
+54-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:38:13-44:29
+54-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:38:28-53
+55                <action android:name="android.intent.action.VIEW" />
+55-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:39:17-69
+55-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:39:25-66
+56
+57                <category android:name="android.intent.category.DEFAULT" />
+57-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:40:17-76
+57-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:40:27-73
+58                <category android:name="android.intent.category.BROWSABLE" />
+58-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:41:17-78
+58-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:41:27-75
+59
+60                <data
+60-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:42:17-43:59
+61                    android:host="debwallapp.pages.dev"
+61-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:43:21-56
+62                    android:scheme="https" />
+62-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:42:23-45
+63            </intent-filter>
+64        </activity>
+65        <activity
+65-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:47:9-52:20
+66            android:name="com.wallapp.SplashActivity"
+66-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:48:13-43
+67            android:exported="true"
+67-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:49:13-36
+68            android:noHistory="true"
+68-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:51:13-37
+69            android:theme="@style/Theme.Splash" >
+69-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:50:13-48
+70        </activity>
+71
+72        <provider
+73            android:name="androidx.core.content.FileProvider"
+73-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:55:13-62
+74            android:authorities="com.wallapp.fileprovider"
+74-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:56:13-64
+75            android:exported="false"
+75-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:57:13-37
+76            android:grantUriPermissions="true" >
+76-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:58:13-47
+77            <meta-data
+77-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:59:13-61:54
+78                android:name="android.support.FILE_PROVIDER_PATHS"
+78-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:60:17-67
+79                android:resource="@xml/file_paths" />
+79-->/storage/emulated/0/AndroidIDEProjects/Wallapp/app/src/main/AndroidManifest.xml:61:17-51
+80        </provider>
+81        <provider
+81-->[androidx.emoji2:emoji2:1.2.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/43422ca2e1fc3c96e8ef5ce2a19bdb4c/transformed/emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+82            android:name="androidx.startup.InitializationProvider"
+82-->[androidx.emoji2:emoji2:1.2.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/43422ca2e1fc3c96e8ef5ce2a19bdb4c/transformed/emoji2-1.2.0/AndroidManifest.xml:25:13-67
+83            android:authorities="com.wallapp.androidx-startup"
+83-->[androidx.emoji2:emoji2:1.2.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/43422ca2e1fc3c96e8ef5ce2a19bdb4c/transformed/emoji2-1.2.0/AndroidManifest.xml:26:13-68
+84            android:exported="false" >
+84-->[androidx.emoji2:emoji2:1.2.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/43422ca2e1fc3c96e8ef5ce2a19bdb4c/transformed/emoji2-1.2.0/AndroidManifest.xml:27:13-37
+85            <meta-data
+85-->[androidx.emoji2:emoji2:1.2.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/43422ca2e1fc3c96e8ef5ce2a19bdb4c/transformed/emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+86                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+86-->[androidx.emoji2:emoji2:1.2.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/43422ca2e1fc3c96e8ef5ce2a19bdb4c/transformed/emoji2-1.2.0/AndroidManifest.xml:30:17-75
+87                android:value="androidx.startup" />
+87-->[androidx.emoji2:emoji2:1.2.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/43422ca2e1fc3c96e8ef5ce2a19bdb4c/transformed/emoji2-1.2.0/AndroidManifest.xml:31:17-49
+88            <meta-data
+88-->[androidx.lifecycle:lifecycle-process:2.6.1] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/eea456a958b26c466f5f7200f55ec2d7/transformed/lifecycle-process-2.6.1/AndroidManifest.xml:29:13-31:52
+89                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+89-->[androidx.lifecycle:lifecycle-process:2.6.1] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/eea456a958b26c466f5f7200f55ec2d7/transformed/lifecycle-process-2.6.1/AndroidManifest.xml:30:17-78
+90                android:value="androidx.startup" />
+90-->[androidx.lifecycle:lifecycle-process:2.6.1] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/eea456a958b26c466f5f7200f55ec2d7/transformed/lifecycle-process-2.6.1/AndroidManifest.xml:31:17-49
+91            <meta-data
+91-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+92                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+92-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+93                android:value="androidx.startup" />
+93-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+94        </provider>
+95
+96        <receiver
+96-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+97            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+97-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+98            android:directBootAware="false"
+98-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+99            android:enabled="true"
+99-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+100            android:exported="true"
+100-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+101            android:permission="android.permission.DUMP" >
+101-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+102            <intent-filter>
+102-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+103                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+103-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+103-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+104            </intent-filter>
+105            <intent-filter>
+105-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+106                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+106-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+106-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+107            </intent-filter>
+108            <intent-filter>
+108-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+109                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+109-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+109-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+110            </intent-filter>
+111            <intent-filter>
+111-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+112                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+112-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+112-->[androidx.profileinstaller:profileinstaller:1.3.0] /data/user/0/com.tom.rv2ide/files/home/.gradle/caches/9.0.0/transforms/ae3d134d2147f40ba25b93e5524a7447/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+113            </intent-filter>
+114        </receiver>
+115    </application>
+116
+117</manifest>
