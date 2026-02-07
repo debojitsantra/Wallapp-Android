@@ -1,4 +1,4 @@
-package com.wallapp;
+package com.debojit.wallapp;
 
 import android.Manifest;
 import android.app.DownloadManager;
