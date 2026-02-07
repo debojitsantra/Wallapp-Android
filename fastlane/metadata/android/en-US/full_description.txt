@@ -1,0 +1,13 @@
+WallApp is a lightweight WebView-based application that provides access to
+the DebWallApp wallpaper website.
+
+It allows users to browse and set wallpapers directly from
+https://debwallapp.pages.dev using a simple native Android wrapper.
+
+Features:
+- Lightweight and fast
+- No ads
+- No trackers
+- Fully open-source
+
+The app does not collect or store any personal data.
