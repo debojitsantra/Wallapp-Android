@@ -1,4 +1,4 @@
-package com.wallapp;
+package com.debojit.wallapp;
 
 import android.content.Intent;
 import android.os.Bundle;
