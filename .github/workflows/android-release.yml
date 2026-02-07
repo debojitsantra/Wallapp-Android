@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write   # REQUIRED for GitHub Releases
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,8 +23,7 @@ jobs:
           java-version: 17
 
       - name: Restore keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
 
       - name: Grant Gradle permission
         run: chmod +x gradlew
@@ -34,15 +36,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
 
-      - name: Upload APK as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: app/build/outputs/apk/release/*.apk
-
       - name: Upload APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: app/build/outputs/apk/release/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
