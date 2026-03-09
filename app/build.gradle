@@ -14,8 +14,7 @@ android {
         versionName '1.0.6'
     }
 
-    // Signing config is only applied when env vars are present (i.e. on CI).
-    // Local debug builds skip this entirely and use the default debug keystore.
+
     def keystorePath = System.getenv("KEYSTORE_PATH")
     if (keystorePath) {
         signingConfigs {

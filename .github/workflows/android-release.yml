@@ -6,7 +6,7 @@ on:
       - "v*"
 
 permissions:
-  contents: write   # Required for GitHub Releases
+  contents: write
 
 jobs:
   build:
@@ -22,7 +22,6 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # FIX: Cache Gradle dependencies to speed up builds significantly
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -33,24 +32,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Restore keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
-
       - name: Grant Gradle permission
         run: chmod +x gradlew
 
-      - name: Build signed release APK
-        env:
-          KEYSTORE_PATH: ${{ github.workspace }}/release.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      - name: Build release APK
         run: ./gradlew assembleRelease
-
-      # FIX: Delete keystore immediately after build so it is not kept in the runner
-      - name: Remove keystore
-        if: always()
-        run: rm -f release.jks
 
       - name: Upload APK to GitHub Release
         uses: softprops/action-gh-release@v2
