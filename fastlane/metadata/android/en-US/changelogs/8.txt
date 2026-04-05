@@ -1,0 +1,3 @@
+* Set wallpaper (home screen, lock screen, or both)
+* Share wallpaper via any installed app
+* Improved JS bridge with data-attribute hooks for website integration

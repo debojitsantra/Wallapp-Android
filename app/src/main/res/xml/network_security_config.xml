@@ -7,7 +7,7 @@
         </trust-anchors>
     </base-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">debwallapp.pages.dev</domain>
+        <domain includeSubdomains="true">thewallapp.pages.dev</domain>
         <domain includeSubdomains="true">res.cloudinary.com</domain>
     </domain-config>
 </network-security-config>

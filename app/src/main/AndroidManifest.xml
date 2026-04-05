@@ -46,7 +46,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https"
-                    android:host="debwallapp.pages.dev" />
+                    android:host="thewallapp.pages.dev" />
             </intent-filter>
         </activity>
 
