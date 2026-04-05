@@ -1,5 +1,5 @@
 /*
- * WallApp - A lightweight WebView wrapper for the DebWallApp wallpaper website.
+ * WallApp - A lightweight WebView wrapper for the TheWallApp wallpaper website.
  * Copyright (C) 2026 Debojit Santra
  *
  * This program is free software: you can redistribute it and/or modify
