@@ -1,0 +1,4 @@
+- Removed Cloudinary Dependency
+- Added offline mode support with offline.html.
+- Removed swipe-to-refresh.
+- UI improvements and dependency updates.

@@ -32,7 +32,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.URLUtil;
@@ -44,10 +43,12 @@ import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
@@ -64,7 +65,7 @@ import java.net.URL;
 public class MainActivity extends AppCompatActivity {
 
     private static final String APP_URL = "https://thewallapp.pages.dev/";
-    private static final int STORAGE_PERMISSION_CODE = 100;
+    private static final String OFFLINE_URL = "file:///android_asset/offline.html";
 
     private String pendingDownloadUrl;
     private String pendingDownloadContent;
@@ -73,6 +74,9 @@ public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private ProgressBar progressBar;
     private SwipeRefreshLayout swipeRefreshLayout;
+
+    private ActivityResultLauncher<String> requestPermissionLauncher;
+    private ActivityResultLauncher<Intent> cropActivityResultLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
+        swipeRefreshLayout.setEnabled(false);
 
         ViewCompat.setOnApplyWindowInsetsListener(swipeRefreshLayout, (v, insets) -> {
             int top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
@@ -93,23 +98,63 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        if (!isNetworkAvailable()) {
-            showNoInternetDialog();
-            return;
-        }
-
+        initActivityLaunchers();
         setupWebView();
         setupSwipeRefresh();
+        setupBackPressed();
 
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
-            webView.loadUrl(APP_URL);
+            if (isNetworkAvailable()) {
+                webView.loadUrl(APP_URL);
+            } else {
+                webView.loadUrl(OFFLINE_URL);
+            }
         }
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
             checkStoragePermission();
         }
+    }
+
+    private void initActivityLaunchers() {
+        requestPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                isGranted -> {
+                    if (isGranted) {
+                        if (pendingDownloadUrl != null) {
+                            downloadFile(pendingDownloadUrl, pendingDownloadContent, pendingDownloadMime);
+                            pendingDownloadUrl = null;
+                        }
+                    } else {
+                        Toast.makeText(this, getString(R.string.permission_required), Toast.LENGTH_LONG).show();
+                    }
+                }
+        );
+
+        cropActivityResultLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        Toast.makeText(this, "Wallpaper set!", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+    }
+
+    private void setupBackPressed() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (webView.canGoBack()) {
+                    webView.goBack();
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
     }
 
     @Override
@@ -125,6 +170,7 @@ public class MainActivity extends AppCompatActivity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
+        s.setAllowFileAccess(true);
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
         s.setBuiltInZoomControls(false);
@@ -137,7 +183,6 @@ public class MainActivity extends AppCompatActivity {
         cm.setAcceptThirdPartyCookies(webView, true);
 
         webView.addJavascriptInterface(new Object() {
-
             @android.webkit.JavascriptInterface
             public void downloadImage(String url, String filename) {
                 runOnUiThread(() -> downloadFile(url, filename, "image/jpeg"));
@@ -155,7 +200,6 @@ public class MainActivity extends AppCompatActivity {
 
             @android.webkit.JavascriptInterface
             public boolean isAndroid() { return true; }
-
         }, "AndroidDownloader");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -174,14 +218,21 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                if (url.startsWith(APP_URL)) return false;
-                if (url.contains("res.cloudinary.com")) return false;
+                if (url.startsWith(APP_URL) || url.contains("backblazeb2.com") || url.startsWith("file:///android_asset/")) return false;
+                
                 try {
                     startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, "No app found to open this link", Toast.LENGTH_SHORT).show();
                 }
                 return true;
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
+                if (!isNetworkAvailable()) {
+                    view.loadUrl(OFFLINE_URL);
+                }
             }
         });
 
@@ -193,73 +244,64 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        webView.setDownloadListener(
-                (url, userAgent, contentDisposition, mimetype, contentLength) ->
-                        downloadFile(url, contentDisposition, mimetype));
+        webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) ->
+                downloadFile(url, contentDisposition, mimetype));
     }
-
-    /* -------------------- Swipe Refresh -------------------- */
 
     private void setupSwipeRefresh() {
         swipeRefreshLayout.setOnRefreshListener(() -> webView.reload());
     }
 
-    /* js bridge injection */
-
     private void injectBridge() {
-        String script =
-                "(function() {" +
-                        "  if (window._wallAppBridgeInjected) return;" +
-                        "  window._wallAppBridgeInjected = true;" +
-                        "  window.nativeDownload = function(url, name) {" +
-                        "    AndroidDownloader.downloadImage(url, name || 'wallpaper.jpg');" +
-                        "  };" +
-                        "  window.nativeShare = function(url, name) {" +
-                        "    AndroidDownloader.shareImage(url, name || 'wallpaper.jpg');" +
-                        "  };" +
-                        "  window.nativeSetWallpaper = function(url) {" +
-                        "    AndroidDownloader.setWallpaper(url);" +
-                        "  };" +
-                        "  document.addEventListener('click', function(e) {" +
-                        "    let t = e.target;" +
-                        "    while (t && t.tagName !== 'A') t = t.parentElement;" +
-                        "    if (t && t.tagName === 'A') {" +
-                        "      const href = t.href;" +
-                        "      if (t.hasAttribute('download') && href && href.includes('res.cloudinary.com')) {" +
-                        "        e.preventDefault(); e.stopPropagation();" +
-                        "        AndroidDownloader.downloadImage(href, t.download || 'wallpaper_' + Date.now() + '.jpg');" +
-                        "      }" +
-                        "    }" +
-                        "  }, true);" +
-                        "  const _origOpen = window.open;" +
-                        "  window.open = function(url, target) {" +
-                        "    if (url && url.includes('res.cloudinary.com')) {" +
-                        "      AndroidDownloader.downloadImage(url, 'wallpaper_' + Date.now() + '.jpg');" +
-                        "      return null;" +
-                        "    }" +
-                        "    return _origOpen.call(window, url, target);" +
-                        "  };" +
-                        "  document.querySelectorAll('[data-download-url]').forEach(function(el) {" +
-                        "    el.addEventListener('click', function(e) { e.stopPropagation();" +
-                        "      AndroidDownloader.downloadImage(el.dataset.downloadUrl, el.dataset.downloadName || 'wallpaper.jpg');" +
-                        "    });" +
-                        "  });" +
-                        "  document.querySelectorAll('[data-share-url]').forEach(function(el) {" +
-                        "    el.addEventListener('click', function(e) { e.stopPropagation();" +
-                        "      AndroidDownloader.shareImage(el.dataset.shareUrl, el.dataset.shareName || 'wallpaper.jpg');" +
-                        "    });" +
-                        "  });" +
-                        "  document.querySelectorAll('[data-setwallpaper-url]').forEach(function(el) {" +
-                        "    el.addEventListener('click', function(e) { e.stopPropagation();" +
-                        "      AndroidDownloader.setWallpaper(el.dataset.setwallpaperUrl);" +
-                        "    });" +
-                        "  });" +
-                        "})();";
-
+        String script = "(function() {" +
+                "  if (window._wallAppBridgeInjected) return;" +
+                "  window._wallAppBridgeInjected = true;" +
+                "  window.nativeDownload = function(url, name) {" +
+                "    AndroidDownloader.downloadImage(url, name || 'wallpaper.jpg');" +
+                "  };" +
+                "  window.nativeShare = function(url, name) {" +
+                "    AndroidDownloader.shareImage(url, name || 'wallpaper.jpg');" +
+                "  };" +
+                "  window.nativeSetWallpaper = function(url) {" +
+                "    AndroidDownloader.setWallpaper(url);" +
+                "  };" +
+                "  document.addEventListener('click', function(e) {" +
+                "    let t = e.target;" +
+                "    while (t && t.tagName !== 'A') t = t.parentElement;" +
+                "    if (t && t.tagName === 'A') {" +
+                "      const href = t.href;" +
+                "      if (t.hasAttribute('download') && href && (href.includes('backblazeb2.com') || href.includes('res.cloudinary.com'))) {" +
+                "        e.preventDefault(); e.stopPropagation();" +
+                "        AndroidDownloader.downloadImage(href, t.download || 'wallpaper_' + Date.now() + '.jpg');" +
+                "      }" +
+                "    }" +
+                "  }, true);" +
+                "  const _origOpen = window.open;" +
+                "  window.open = function(url, target) {" +
+                "    if (url && (url.includes('backblazeb2.com') || url.includes('res.cloudinary.com'))) {" +
+                "      AndroidDownloader.downloadImage(url, 'wallpaper_' + Date.now() + '.jpg');" +
+                "      return null;" +
+                "    }" +
+                "    return _origOpen.call(window, url, target);" +
+                "  };" +
+                "  document.querySelectorAll('[data-download-url]').forEach(function(el) {" +
+                "    el.addEventListener('click', function(e) { e.stopPropagation();" +
+                "      AndroidDownloader.downloadImage(el.dataset.downloadUrl, el.dataset.downloadName || 'wallpaper.jpg');" +
+                "    });" +
+                "  });" +
+                "  document.querySelectorAll('[data-share-url]').forEach(function(el) {" +
+                "    el.addEventListener('click', function(e) { e.stopPropagation();" +
+                "      AndroidDownloader.shareImage(el.dataset.shareUrl, el.dataset.shareName || 'wallpaper.jpg');" +
+                "    });" +
+                "  });" +
+                "  document.querySelectorAll('[data-setwallpaper-url]').forEach(function(el) {" +
+                "    el.addEventListener('click', function(e) { e.stopPropagation();" +
+                "      AndroidDownloader.setWallpaper(el.dataset.setwallpaperUrl);" +
+                "    });" +
+                "  });" +
+                "})();";
         webView.evaluateJavascript(script, null);
     }
-
-    /* download */
 
     private void downloadFile(String url, String contentDisposition, String mimetype) {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 &&
@@ -268,8 +310,7 @@ public class MainActivity extends AppCompatActivity {
             pendingDownloadUrl = url;
             pendingDownloadContent = contentDisposition;
             pendingDownloadMime = mimetype;
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+            requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             return;
         }
 
@@ -298,8 +339,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, getString(R.string.download_failed) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
-
-    /* share */
 
     private void shareImageFromUrl(String url, String filename) {
         Toast.makeText(this, "Preparing share…", Toast.LENGTH_SHORT).show();
@@ -338,13 +377,10 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             } catch (Exception e) {
-                runOnUiThread(() -> Toast.makeText(this,
-                        "Share failed: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                runOnUiThread(() -> Toast.makeText(this, "Share failed: " + e.getMessage(), Toast.LENGTH_LONG).show());
             }
         }).start();
     }
-
-    /* swt wallpaper */
 
     private void showSetWallpaperDialog(String url) {
         new AlertDialog.Builder(this)
@@ -352,8 +388,8 @@ public class MainActivity extends AppCompatActivity {
                 .setItems(new String[]{"Home screen", "Lock screen", "Both"}, (dialog, which) -> {
                     int flag;
                     switch (which) {
-                        case 0:  flag = WallpaperManager.FLAG_SYSTEM; break;
-                        case 1:  flag = WallpaperManager.FLAG_LOCK;   break;
+                        case 0: flag = WallpaperManager.FLAG_SYSTEM; break;
+                        case 1: flag = WallpaperManager.FLAG_LOCK; break;
                         default: flag = WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
                     }
                     applyWallpaper(url, flag);
@@ -363,14 +399,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private int pendingWallpaperFlags = WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
-    private static final int CROP_AND_SET_WALLPAPER = 201;
 
     private void applyWallpaper(String url, int flags) {
         pendingWallpaperFlags = flags;
         Toast.makeText(this, "Downloading image…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
-                // Save to temp file in cache
                 File cacheDir = new File(getCacheDir(), "wallpapers");
                 if (!cacheDir.exists()) cacheDir.mkdirs();
                 File tmpFile = new File(cacheDir, "setwallpaper_tmp.jpg");
@@ -386,11 +420,9 @@ public class MainActivity extends AppCompatActivity {
                     int len;
                     while ((len = in.read(buf)) != -1) out.write(buf, 0, len);
                 }
-
                 runOnUiThread(() -> launchCropIntent(tmpFile));
             } catch (Exception e) {
-                runOnUiThread(() -> Toast.makeText(this,
-                        "Failed to download: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                runOnUiThread(() -> Toast.makeText(this, "Failed to download: " + e.getMessage(), Toast.LENGTH_LONG).show());
             }
         }).start();
     }
@@ -398,29 +430,21 @@ public class MainActivity extends AppCompatActivity {
     private void launchCropIntent(File imageFile) {
         try {
             Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", imageFile);
-
-            // Try system wallpaper crop activity first
             Intent cropIntent = new Intent("android.service.wallpaper.CROP_AND_SET_WALLPAPER");
             cropIntent.setDataAndType(uri, "image/*");
             cropIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-
             if (cropIntent.resolveActivity(getPackageManager()) != null) {
-                startActivityForResult(cropIntent, CROP_AND_SET_WALLPAPER);
+                cropActivityResultLauncher.launch(cropIntent);
                 return;
             }
 
-            // generic crop via chooser
             Intent fallback = new Intent(Intent.ACTION_ATTACH_DATA);
             fallback.setDataAndType(uri, "image/*");
             fallback.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             fallback.putExtra("mimeType", "image/*");
-            startActivityForResult(
-                    Intent.createChooser(fallback, "Set as wallpaper"),
-                    CROP_AND_SET_WALLPAPER
-            );
+            cropActivityResultLauncher.launch(Intent.createChooser(fallback, "Set as wallpaper"));
         } catch (Exception e) {
-            // set directly without crop
             Toast.makeText(this, "Setting wallpaper…", Toast.LENGTH_SHORT).show();
             new Thread(() -> {
                 try {
@@ -430,22 +454,11 @@ public class MainActivity extends AppCompatActivity {
                     WallpaperManager.getInstance(this).setBitmap(bmp, null, true, pendingWallpaperFlags);
                     runOnUiThread(() -> Toast.makeText(this, "Wallpaper set!", Toast.LENGTH_SHORT).show());
                 } catch (Exception ex) {
-                    runOnUiThread(() -> Toast.makeText(this,
-                            "Failed: " + ex.getMessage(), Toast.LENGTH_LONG).show());
+                    runOnUiThread(() -> Toast.makeText(this, "Failed: " + ex.getMessage(), Toast.LENGTH_LONG).show());
                 }
             }).start();
         }
     }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CROP_AND_SET_WALLPAPER && resultCode == RESULT_OK) {
-            Toast.makeText(this, "Wallpaper set!", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    /* network */
 
     private boolean isNetworkAvailable() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -453,63 +466,26 @@ public class MainActivity extends AppCompatActivity {
         Network network = cm.getActiveNetwork();
         if (network == null) return false;
         NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-        return caps != null &&
-                (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                        || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-                        || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
     }
-
-    private void showNoInternetDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.no_internet))
-                .setMessage("Check your connection and try again.")
-                .setCancelable(false)
-                .setPositiveButton(getString(R.string.retry), (d, w) -> recreate())
-                .setNegativeButton(getString(R.string.exit), (d, w) -> finish())
-                .show();
-    }
-
-    /* permissions */
 
     private void checkStoragePermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+            requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == STORAGE_PERMISSION_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (pendingDownloadUrl != null) {
-                    downloadFile(pendingDownloadUrl, pendingDownloadContent, pendingDownloadMime);
-                    pendingDownloadUrl = null;
-                    pendingDownloadContent = null;
-                    pendingDownloadMime = null;
-                }
-            } else {
-                Toast.makeText(this, getString(R.string.permission_required), Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
-    /* life cycle */
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-            webView.goBack();
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
     }
 
     @Override protected void onPause() { super.onPause(); webView.onPause(); }
-    @Override protected void onResume() { super.onResume(); webView.onResume(); }
+    @Override protected void onResume() {
+        super.onResume();
+        webView.onResume();
+        if (OFFLINE_URL.equals(webView.getUrl()) && isNetworkAvailable()) {
+            webView.loadUrl(APP_URL);
+        }
+    }
 
     @Override
     protected void onDestroy() {
