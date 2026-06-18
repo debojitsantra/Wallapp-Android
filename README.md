@@ -3,7 +3,6 @@
 # Wallapp Android
 
 [![F-Droid](https://img.shields.io/f-droid/v/com.debojit.wallapp.svg)](https://f-droid.org/packages/com.debojit.wallapp/)
-[![License](https://img.shields.io/github/license/debojitsantra/Wallapp-Android)](LICENSE)
 ![Maintenance](https://img.shields.io/badge/maintenance-temporarily_paused-orange)
 
 **Wallapp Android** is a lightweight Android wrapper for **TheWallApp**, a wallpaper platform for browsing and downloading wallpapers.
