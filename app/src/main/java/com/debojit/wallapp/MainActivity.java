@@ -24,6 +24,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Bitmap;
@@ -236,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
 
             @android.webkit.JavascriptInterface
             public void setWallpaper(String url) {
-                runOnUiThread(() -> showSetWallpaperDialog(url, null));
+                runOnUiThread(() -> showSetWallpaperDialogWithCurrentWebTheme(url));
             }
 
             @android.webkit.JavascriptInterface
@@ -511,6 +512,14 @@ public class MainActivity extends AppCompatActivity {
         sheet.show();
     }
 
+    private void showSetWallpaperDialogWithCurrentWebTheme(String url) {
+        String script = "(function() {" +
+                "var app = document.querySelector('.app');" +
+                "return !!((app && app.classList.contains('dark-mode')) || document.body.classList.contains('dark-mode'));" +
+                "})();";
+        webView.evaluateJavascript(script, value -> showSetWallpaperDialog(url, "true".equals(value)));
+    }
+
     private void applyWallpaperSheetFont(View content) {
         Typeface typeface = getInstrumentSerifTypeface();
         if (typeface == null) return;
@@ -573,9 +582,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void styleWallpaperSheetButton(MaterialButton button, int background, int text, int border) {
-        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(background));
+        ColorStateList textColor = ColorStateList.valueOf(text);
+        button.setBackgroundTintList(ColorStateList.valueOf(background));
         button.setTextColor(text);
-        button.setStrokeColor(android.content.res.ColorStateList.valueOf(border));
+        button.setIconTint(textColor);
+        button.setStrokeColor(ColorStateList.valueOf(border));
         button.setStrokeWidth(dp(1));
         button.setCornerRadius(dp(14));
     }
