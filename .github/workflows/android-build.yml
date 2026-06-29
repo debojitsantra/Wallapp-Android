@@ -41,6 +41,9 @@ jobs:
         with:
           gradle-version: "9.3.1"
 
+      - name: Verify Gradle installation
+        run: gradle --version
+
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
