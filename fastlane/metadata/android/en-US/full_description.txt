@@ -1,13 +1,13 @@
-WallApp is a lightweight WebView-based application that provides access to
-the TheWallApp wallpaper website.
+WallApp is a lightweight Android app for browsing wallpapers from https://thewallapp.pages.dev.
 
-It allows users to browse and set wallpapers directly from
-https://thewallapp.pages.dev using a simple native Android wrapper.
+TheWallApp is my personal wallpaper website, designed to be clean, simple, and free from ads.
 
 Features:
+
 - Lightweight and fast
 - No ads
-- No trackers
-- Fully open-source
+- Browse and download wallpapers
+- Set wallpapers directly from the app
 
-The app does not collect or store any personal data.
+
+WallApp does not collect, store, or share any personal data.
