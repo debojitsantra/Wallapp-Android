@@ -1,7 +1,7 @@
 
 .gradle/
 **/build/
-
+thewallapp-main/
 .acside/
 
 .idea/
@@ -20,3 +20,4 @@ local.properties
 
 .DS_Store
 Thumbs.db
+

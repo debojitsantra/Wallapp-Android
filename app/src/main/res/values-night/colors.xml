@@ -6,6 +6,4 @@
     <color name="wallpaper_sheet_handle">#5A5A5A</color>
     <color name="wallpaper_sheet_option_bg">#1A1A1A</color>
     <color name="wallpaper_sheet_option_border">#3A3A3A</color>
-    <color name="wallpaper_sheet_primary_button_bg">#FFFFFF</color>
-    <color name="wallpaper_sheet_primary_button_text">#000000</color>
 </resources>

@@ -28,7 +28,9 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -45,6 +47,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.TextView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -61,6 +64,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.button.MaterialButton;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -84,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private SwipeRefreshLayout swipeRefreshLayout;
     private long lastBackPressedAt;
+    private Typeface instrumentSerifTypeface;
 
     private ActivityResultLauncher<String> requestPermissionLauncher;
     private ActivityResultLauncher<Intent> cropActivityResultLauncher;
@@ -231,7 +236,12 @@ public class MainActivity extends AppCompatActivity {
 
             @android.webkit.JavascriptInterface
             public void setWallpaper(String url) {
-                runOnUiThread(() -> showSetWallpaperDialog(url));
+                runOnUiThread(() -> showSetWallpaperDialog(url, null));
+            }
+
+            @android.webkit.JavascriptInterface
+            public void setWallpaperTheme(String url, boolean isDarkMode) {
+                runOnUiThread(() -> showSetWallpaperDialog(url, isDarkMode));
             }
 
             @android.webkit.JavascriptInterface
@@ -319,8 +329,11 @@ public class MainActivity extends AppCompatActivity {
                 "  window.nativeShare = function(url, name) {" +
                 "    AndroidDownloader.shareImage(url, name || 'wallpaper.jpg');" +
                 "  };" +
+                "  function wallAppIsDarkMode() {" +
+                "    return !!((document.querySelector('.app') && document.querySelector('.app').classList.contains('dark-mode')) || document.body.classList.contains('dark-mode'));" +
+                "  }" +
                 "  window.nativeSetWallpaper = function(url) {" +
-                "    AndroidDownloader.setWallpaper(url);" +
+                "    AndroidDownloader.setWallpaperTheme(url, wallAppIsDarkMode());" +
                 "  };" +
                 "  window.nativeSharePage = function(url, title) {" +
                 "    AndroidDownloader.sharePage(url || location.href, title || document.title || 'WallApp');" +
@@ -365,7 +378,7 @@ public class MainActivity extends AppCompatActivity {
                 "  });" +
                 "  document.querySelectorAll('[data-setwallpaper-url]').forEach(function(el) {" +
                 "    el.addEventListener('click', function(e) { e.stopPropagation();" +
-                "      AndroidDownloader.setWallpaper(el.dataset.setwallpaperUrl);" +
+                "      AndroidDownloader.setWallpaperTheme(el.dataset.setwallpaperUrl, wallAppIsDarkMode());" +
                 "    });" +
                 "  });" +
                 "  document.querySelectorAll('[data-share-page-url]').forEach(function(el) {" +
@@ -460,9 +473,13 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    private void showSetWallpaperDialog(String url) {
+    private void showSetWallpaperDialog(String url, Boolean isDarkMode) {
         BottomSheetDialog sheet = new BottomSheetDialog(this);
         View content = getLayoutInflater().inflate(R.layout.bottom_sheet_set_wallpaper, null);
+        applyWallpaperSheetFont(content);
+        if (isDarkMode != null) {
+            applyWallpaperSheetTheme(content, isDarkMode);
+        }
         sheet.setContentView(content);
 
         content.findViewById(R.id.homeScreenButton).setOnClickListener(v -> {
@@ -492,6 +509,79 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         sheet.show();
+    }
+
+    private void applyWallpaperSheetFont(View content) {
+        Typeface typeface = getInstrumentSerifTypeface();
+        if (typeface == null) return;
+
+        TextView title = content.findViewById(R.id.wallpaperSheetTitle);
+        title.setTypeface(typeface, Typeface.BOLD);
+        setButtonTypeface(content.findViewById(R.id.homeScreenButton), typeface);
+        setButtonTypeface(content.findViewById(R.id.lockScreenButton), typeface);
+        setButtonTypeface(content.findViewById(R.id.bothScreensButton), typeface);
+        setButtonTypeface(content.findViewById(R.id.setAsButton), typeface);
+    }
+
+    private void setButtonTypeface(MaterialButton button, Typeface typeface) {
+        button.setTypeface(typeface, Typeface.NORMAL);
+    }
+
+    private Typeface getInstrumentSerifTypeface() {
+        if (instrumentSerifTypeface == null) {
+            try {
+                instrumentSerifTypeface = Typeface.createFromAsset(
+                        getAssets(), "fonts/InstrumentSerif-Regular.ttf");
+            } catch (Exception ignored) {
+                instrumentSerifTypeface = Typeface.SERIF;
+            }
+        }
+        return instrumentSerifTypeface;
+    }
+
+    private void applyWallpaperSheetTheme(View content, boolean isDarkMode) {
+        int bgPrimary = Color.parseColor(isDarkMode ? "#000000" : "#FFFFFF");
+        int bgSecondary = Color.parseColor(isDarkMode ? "#1A1A1A" : "#F5F5F5");
+        int textPrimary = Color.parseColor(isDarkMode ? "#FFFFFF" : "#000000");
+        int border = Color.parseColor(isDarkMode ? "#333333" : "#E0E0E0");
+        int handle = Color.parseColor(isDarkMode ? "#5A5A5A" : "#BDBDBD");
+
+        content.setBackground(createRoundedTopDrawable(bgPrimary, border));
+        View handleView = content.getChildAt(0);
+        if (handleView != null) {
+            GradientDrawable handleDrawable = new GradientDrawable();
+            handleDrawable.setColor(handle);
+            handleDrawable.setCornerRadius(dp(3));
+            handleView.setBackground(handleDrawable);
+        }
+
+        TextView title = content.findViewById(R.id.wallpaperSheetTitle);
+        title.setTextColor(textPrimary);
+        styleWallpaperSheetButton(content.findViewById(R.id.homeScreenButton), bgSecondary, textPrimary, border);
+        styleWallpaperSheetButton(content.findViewById(R.id.lockScreenButton), bgSecondary, textPrimary, border);
+        styleWallpaperSheetButton(content.findViewById(R.id.bothScreensButton), bgSecondary, textPrimary, border);
+        styleWallpaperSheetButton(content.findViewById(R.id.setAsButton), bgSecondary, textPrimary, border);
+    }
+
+    private GradientDrawable createRoundedTopDrawable(int fill, int stroke) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(fill);
+        drawable.setStroke(dp(1), stroke);
+        float radius = dp(24);
+        drawable.setCornerRadii(new float[]{radius, radius, radius, radius, 0, 0, 0, 0});
+        return drawable;
+    }
+
+    private void styleWallpaperSheetButton(MaterialButton button, int background, int text, int border) {
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(background));
+        button.setTextColor(text);
+        button.setStrokeColor(android.content.res.ColorStateList.valueOf(border));
+        button.setStrokeWidth(dp(1));
+        button.setCornerRadius(dp(14));
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
     private int pendingWallpaperFlags = WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
