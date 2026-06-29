@@ -547,7 +547,7 @@ public class MainActivity extends AppCompatActivity {
         int handle = Color.parseColor(isDarkMode ? "#5A5A5A" : "#BDBDBD");
 
         content.setBackground(createRoundedTopDrawable(bgPrimary, border));
-        View handleView = content.getChildAt(0);
+        View handleView = content.findViewById(R.id.wallpaperSheetHandle);
         if (handleView != null) {
             GradientDrawable handleDrawable = new GradientDrawable();
             handleDrawable.setColor(handle);
