@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_wallpaper_sheet"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="28dp">
+
+    <View
+        android:layout_width="44dp"
+        android:layout_height="5dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_wallpaper_sheet_handle" />
+
+    <TextView
+        android:id="@+id/wallpaperSheetTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="18dp"
+        android:fontFamily="serif"
+        android:text="@string/set_your_wallpaper"
+        android:textColor="@color/wallpaper_sheet_text"
+        android:textSize="30sp"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/homeScreenButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/bg_wallpaper_option"
+        android:backgroundTint="@null"
+        android:fontFamily="serif"
+        android:text="@string/home_screen"
+        android:textAllCaps="false"
+        android:textColor="@color/wallpaper_sheet_text"
+        android:textSize="20sp" />
+
+    <Button
+        android:id="@+id/lockScreenButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/bg_wallpaper_option"
+        android:backgroundTint="@null"
+        android:fontFamily="serif"
+        android:text="@string/lock_screen"
+        android:textAllCaps="false"
+        android:textColor="@color/wallpaper_sheet_text"
+        android:textSize="20sp" />
+
+    <Button
+        android:id="@+id/bothScreensButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="18dp"
+        android:background="@drawable/bg_wallpaper_option"
+        android:backgroundTint="@null"
+        android:fontFamily="serif"
+        android:text="@string/both_screens"
+        android:textAllCaps="false"
+        android:textColor="@color/wallpaper_sheet_text"
+        android:textSize="20sp" />
+
+    <Button
+        android:id="@+id/setAsButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_wallpaper_set_as"
+        android:backgroundTint="@null"
+        android:fontFamily="serif"
+        android:text="@string/set_as"
+        android:textAllCaps="false"
+        android:textColor="@color/wallpaper_sheet_primary_button_text"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+</LinearLayout>

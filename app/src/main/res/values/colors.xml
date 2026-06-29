@@ -8,4 +8,12 @@
     <color name="gray_light">#F5F5F5</color>
     <color name="gray">#9E9E9E</color>
     <color name="gray_dark">#424242</color>
+    <color name="wallpaper_sheet_bg">#FFFFFF</color>
+    <color name="wallpaper_sheet_text">#000000</color>
+    <color name="wallpaper_sheet_secondary_text">#666666</color>
+    <color name="wallpaper_sheet_handle">#BDBDBD</color>
+    <color name="wallpaper_sheet_option_bg">#F5F5F5</color>
+    <color name="wallpaper_sheet_option_border">#E0E0E0</color>
+    <color name="wallpaper_sheet_primary_button_bg">#000000</color>
+    <color name="wallpaper_sheet_primary_button_text">#FFFFFF</color>
 </resources>

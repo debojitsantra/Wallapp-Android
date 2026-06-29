@@ -10,9 +10,11 @@
     <string name="download_failed">Download failed</string>
     <string name="permission_required">Storage permission required for downloading wallpapers</string>
     <string name="link_copied">Link copied</string>
-    <string name="wallpaper_preview">Wallpaper preview</string>
-    <string name="set_wallpaper">Set wallpaper</string>
-    <string name="set_directly">Set directly</string>
+    <string name="set_your_wallpaper">Set Your Wallpaper</string>
+    <string name="home_screen">Home Screen</string>
+    <string name="lock_screen">Lock Screen</string>
+    <string name="both_screens">Both</string>
+    <string name="set_as">Set as</string>
     <string name="app_actions">App actions</string>
     <string name="share_page">Share page</string>
     <string name="open_in_browser">Open in browser</string>

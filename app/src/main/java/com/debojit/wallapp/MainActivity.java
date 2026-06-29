@@ -25,8 +25,10 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.ColorDrawable;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -43,7 +45,6 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -58,6 +59,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -84,6 +87,10 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityResultLauncher<String> requestPermissionLauncher;
     private ActivityResultLauncher<Intent> cropActivityResultLauncher;
+
+    private interface WallpaperFileCallback {
+        void onReady(File imageFile);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -307,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
                 "  if (window._wallAppBridgeInjected) return;" +
                 "  window._wallAppBridgeInjected = true;" +
                 "  window.nativeDownload = function(url, name) {" +
-                "    AndroidDownloader.downloadImage(url, name || 'wallpaper.jpg');" +
+                "    AndroidDownloader.downloadImage(url, name || '');" +
                 "  };" +
                 "  window.nativeShare = function(url, name) {" +
                 "    AndroidDownloader.shareImage(url, name || 'wallpaper.jpg');" +
@@ -334,21 +341,21 @@ public class MainActivity extends AppCompatActivity {
                 "      const href = t.href;" +
                 "      if (t.hasAttribute('download') && href && (href.includes('backblazeb2.com') || href.includes('res.cloudinary.com'))) {" +
                 "        e.preventDefault(); e.stopPropagation();" +
-                "        AndroidDownloader.downloadImage(href, t.download || 'wallpaper_' + Date.now() + '.jpg');" +
+                "        AndroidDownloader.downloadImage(href, t.download || '');" +
                 "      }" +
                 "    }" +
                 "  }, true);" +
                 "  const _origOpen = window.open;" +
                 "  window.open = function(url, target) {" +
                 "    if (url && (url.includes('backblazeb2.com') || url.includes('res.cloudinary.com'))) {" +
-                "      AndroidDownloader.downloadImage(url, 'wallpaper_' + Date.now() + '.jpg');" +
+                "      AndroidDownloader.downloadImage(url, '');" +
                 "      return null;" +
                 "    }" +
                 "    return _origOpen.call(window, url, target);" +
                 "  };" +
                 "  document.querySelectorAll('[data-download-url]').forEach(function(el) {" +
                 "    el.addEventListener('click', function(e) { e.stopPropagation();" +
-                "      AndroidDownloader.downloadImage(el.dataset.downloadUrl, el.dataset.downloadName || 'wallpaper.jpg');" +
+                "      AndroidDownloader.downloadImage(el.dataset.downloadUrl, el.dataset.downloadName || '');" +
                 "    });" +
                 "  });" +
                 "  document.querySelectorAll('[data-share-url]').forEach(function(el) {" +
@@ -454,31 +461,58 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showSetWallpaperDialog(String url) {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Set as wallpaper")
-                .setItems(new String[]{"Home screen", "Lock screen", "Both"}, (dialog, which) -> {
-                    int flag;
-                    switch (which) {
-                        case 0: flag = WallpaperManager.FLAG_SYSTEM; break;
-                        case 1: flag = WallpaperManager.FLAG_LOCK; break;
-                        default: flag = WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
-                    }
-                    applyWallpaper(url, flag);
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        BottomSheetDialog sheet = new BottomSheetDialog(this);
+        View content = getLayoutInflater().inflate(R.layout.bottom_sheet_set_wallpaper, null);
+        sheet.setContentView(content);
+
+        content.findViewById(R.id.homeScreenButton).setOnClickListener(v -> {
+            sheet.dismiss();
+            applyWallpaperDirectly(url, WallpaperManager.FLAG_SYSTEM);
+        });
+        content.findViewById(R.id.lockScreenButton).setOnClickListener(v -> {
+            sheet.dismiss();
+            applyWallpaperDirectly(url, WallpaperManager.FLAG_LOCK);
+        });
+        content.findViewById(R.id.bothScreensButton).setOnClickListener(v -> {
+            sheet.dismiss();
+            applyWallpaperDirectly(url, WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK);
+        });
+        content.findViewById(R.id.setAsButton).setOnClickListener(v -> {
+            sheet.dismiss();
+            applyWallpaperWithSystemPicker(url);
+        });
+
+        sheet.setOnShowListener(dialog -> {
+            if (sheet.getWindow() != null) {
+                sheet.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            }
+            View bottomSheet = sheet.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheet != null) {
+                bottomSheet.setBackgroundColor(Color.TRANSPARENT);
+            }
+        });
+        sheet.show();
     }
 
     private int pendingWallpaperFlags = WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
 
-    private void applyWallpaper(String url, int flags) {
+    private void applyWallpaperDirectly(String url, int flags) {
         pendingWallpaperFlags = flags;
+        downloadWallpaperFile(url, imageFile -> setWallpaperDirectly(imageFile, flags));
+    }
+
+    private void applyWallpaperWithSystemPicker(String url) {
+        pendingWallpaperFlags = WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
+        downloadWallpaperFile(url, this::launchCropIntent);
+    }
+
+    private void downloadWallpaperFile(String url, WallpaperFileCallback callback) {
         Toast.makeText(this, "Downloading image…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
                 File cacheDir = new File(getCacheDir(), "wallpapers");
                 if (!cacheDir.exists()) cacheDir.mkdirs();
-                File tmpFile = new File(cacheDir, "setwallpaper_tmp.jpg");
+                File tmpFile = new File(cacheDir, "setwallpaper_tmp" + getImageExtensionFromUrl(url));
 
                 HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
                 conn.setConnectTimeout(15000);
@@ -491,43 +525,28 @@ public class MainActivity extends AppCompatActivity {
                     int len;
                     while ((len = in.read(buf)) != -1) out.write(buf, 0, len);
                 }
-                Bitmap preview = BitmapFactory.decodeFile(tmpFile.getAbsolutePath());
-                runOnUiThread(() -> showWallpaperPreview(tmpFile, preview));
+                runOnUiThread(() -> callback.onReady(tmpFile));
             } catch (Exception e) {
                 runOnUiThread(() -> Toast.makeText(this, "Failed to download: " + e.getMessage(), Toast.LENGTH_LONG).show());
             }
         }).start();
     }
 
-    private void showWallpaperPreview(File imageFile, Bitmap preview) {
-        if (preview == null) {
-            launchCropIntent(imageFile);
-            return;
-        }
-
-        ImageView imageView = new ImageView(this);
-        imageView.setImageBitmap(preview);
-        imageView.setAdjustViewBounds(true);
-        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        int padding = (int) (16 * getResources().getDisplayMetrics().density);
-        imageView.setPadding(padding, padding, padding, padding);
-
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle(R.string.wallpaper_preview)
-                .setView(imageView)
-                .setPositiveButton(R.string.set_wallpaper, (dialog, which) -> launchCropIntent(imageFile))
-                .setNeutralButton(R.string.set_directly, (dialog, which) -> setWallpaperDirectly(imageFile))
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
-    private void setWallpaperDirectly(File imageFile) {
+    private void setWallpaperDirectly(File imageFile, int flags) {
         Toast.makeText(this, "Setting wallpaper…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try (InputStream in = getContentResolver().openInputStream(
                     FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", imageFile))) {
                 Bitmap bmp = BitmapFactory.decodeStream(in);
-                WallpaperManager.getInstance(this).setBitmap(bmp, null, true, pendingWallpaperFlags);
+                if (bmp == null) {
+                    throw new IllegalStateException("Unable to decode wallpaper");
+                }
+                WallpaperManager wallpaperManager = WallpaperManager.getInstance(this);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    wallpaperManager.setBitmap(bmp, null, true, flags);
+                } else {
+                    wallpaperManager.setBitmap(bmp);
+                }
                 runOnUiThread(() -> Toast.makeText(this, "Wallpaper set!", Toast.LENGTH_SHORT).show());
             } catch (Exception ex) {
                 runOnUiThread(() -> Toast.makeText(this, "Failed: " + ex.getMessage(), Toast.LENGTH_LONG).show());
@@ -553,18 +572,7 @@ public class MainActivity extends AppCompatActivity {
             fallback.putExtra("mimeType", "image/*");
             cropActivityResultLauncher.launch(Intent.createChooser(fallback, "Set as wallpaper"));
         } catch (Exception e) {
-            Toast.makeText(this, "Setting wallpaper…", Toast.LENGTH_SHORT).show();
-            new Thread(() -> {
-                try {
-                    Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", imageFile);
-                    InputStream in = getContentResolver().openInputStream(uri);
-                    Bitmap bmp = BitmapFactory.decodeStream(in);
-                    WallpaperManager.getInstance(this).setBitmap(bmp, null, true, pendingWallpaperFlags);
-                    runOnUiThread(() -> Toast.makeText(this, "Wallpaper set!", Toast.LENGTH_SHORT).show());
-                } catch (Exception ex) {
-                    runOnUiThread(() -> Toast.makeText(this, "Failed: " + ex.getMessage(), Toast.LENGTH_LONG).show());
-                }
-            }).start();
+            setWallpaperDirectly(imageFile, pendingWallpaperFlags);
         }
     }
 
@@ -599,8 +607,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String buildDownloadFileName(String url, String contentDisposition, String mimetype) {
-        String guessed = URLUtil.guessFileName(url, contentDisposition, mimetype);
+        String providedName = getPlainProvidedFileName(contentDisposition);
+        String guessed = providedName != null
+                ? providedName
+                : URLUtil.guessFileName(url, contentDisposition, mimetype);
+        String urlName = getFileNameFromUrl(url);
+        if (isGenericDownloadName(guessed) && urlName != null) {
+            guessed = urlName;
+        }
+
         String safeName = guessed.replaceAll("[^a-zA-Z0-9._\\-]", "_");
+        if (safeName.trim().isEmpty()) {
+            safeName = "wallpaper";
+        }
         String lower = safeName.toLowerCase(Locale.US);
         if (!lower.matches(".*\\.(jpg|jpeg|png|webp)$")) {
             if (mimetype != null && mimetype.contains("png")) {
@@ -611,10 +630,49 @@ public class MainActivity extends AppCompatActivity {
                 safeName += ".jpg";
             }
         }
-        if (!safeName.toLowerCase(Locale.US).startsWith("wallapp_")) {
-            safeName = "wallapp_" + safeName;
-        }
         return safeName;
+    }
+
+    private String getPlainProvidedFileName(String contentDisposition) {
+        if (contentDisposition == null) return null;
+        String value = contentDisposition.trim();
+        if (value.isEmpty()) return null;
+        String lower = value.toLowerCase(Locale.US);
+        if (lower.contains("filename=") || lower.startsWith("attachment") || lower.startsWith("inline")) {
+            return null;
+        }
+        return value;
+    }
+
+    private String getFileNameFromUrl(String url) {
+        try {
+            String lastPathSegment = Uri.parse(url).getLastPathSegment();
+            if (lastPathSegment == null || lastPathSegment.trim().isEmpty()) return null;
+            String candidate = lastPathSegment.replaceAll("[^a-zA-Z0-9._\\-]", "_");
+            return candidate.trim().isEmpty() ? null : candidate;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private boolean isGenericDownloadName(String filename) {
+        if (filename == null) return true;
+        String lower = filename.toLowerCase(Locale.US);
+        return lower.equals("download") ||
+                lower.equals("download.jpg") ||
+                lower.equals("wallapp_download") ||
+                lower.equals("wallapp_download.jpg") ||
+                lower.startsWith("wallpaper_");
+    }
+
+    private String getImageExtensionFromUrl(String url) {
+        String name = getFileNameFromUrl(url);
+        if (name == null) return ".jpg";
+        String lower = name.toLowerCase(Locale.US);
+        if (lower.endsWith(".png")) return ".png";
+        if (lower.endsWith(".webp")) return ".webp";
+        if (lower.endsWith(".jpeg")) return ".jpeg";
+        return ".jpg";
     }
 
     private void sharePageLink(String url, String title) {
