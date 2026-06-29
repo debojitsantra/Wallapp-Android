@@ -1,0 +1,8 @@
+- Added GitHub Actions workflow for debug APK builds.
+- Improved deep link handling for TheWallApp pages.
+- Added native app actions for sharing, opening in browser, copying links, clearing cache, and app info.
+- Added wallpaper preview before setting, with crop/set and direct-set options.
+- Improved wallpaper downloads with cleaner filenames and a dedicated Pictures/WallApp folder.
+- Improved offline retry behavior and automatic reconnect handling.
+- Added press-back-again-to-exit behavior.
+- Hardened WebView and network security defaults.

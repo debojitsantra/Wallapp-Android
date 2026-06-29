@@ -10,8 +10,8 @@ android {
         applicationId 'com.debojit.wallapp'
         minSdk 21
         targetSdk 35
-        versionCode 9
-        versionName '1.1.1'
+        versionCode 10
+        versionName '1.1.2'
     }
 
 
