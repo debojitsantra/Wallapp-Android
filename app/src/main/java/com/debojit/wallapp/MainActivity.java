@@ -20,6 +20,8 @@ package com.debojit.wallapp;
 import android.Manifest;
 import android.app.DownloadManager;
 import android.app.WallpaperManager;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -28,6 +30,7 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -40,6 +43,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -47,7 +51,6 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -61,11 +64,14 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String APP_URL = "https://thewallapp.pages.dev/";
     private static final String OFFLINE_URL = "file:///android_asset/offline.html";
+    private static final String WALLAPP_DOWNLOAD_DIR = "WallApp";
+    private static final long EXIT_BACK_PRESS_INTERVAL_MS = 2000;
 
     private String pendingDownloadUrl;
     private String pendingDownloadContent;
@@ -74,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private ProgressBar progressBar;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private long lastBackPressedAt;
 
     private ActivityResultLauncher<String> requestPermissionLauncher;
     private ActivityResultLauncher<Intent> cropActivityResultLauncher;
@@ -106,15 +113,26 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
+            String initialUrl = getInitialUrl(getIntent());
             if (isNetworkAvailable()) {
-                webView.loadUrl(APP_URL);
+                webView.loadUrl(initialUrl);
             } else {
                 webView.loadUrl(OFFLINE_URL);
             }
         }
 
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             checkStoragePermission();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String url = getInitialUrl(intent);
+        if (webView != null && isNetworkAvailable()) {
+            webView.loadUrl(url);
         }
     }
 
@@ -150,8 +168,14 @@ public class MainActivity extends AppCompatActivity {
                 if (webView.canGoBack()) {
                     webView.goBack();
                 } else {
-                    setEnabled(false);
-                    getOnBackPressedDispatcher().onBackPressed();
+                    long now = System.currentTimeMillis();
+                    if (now - lastBackPressedAt < EXIT_BACK_PRESS_INTERVAL_MS) {
+                        setEnabled(false);
+                        getOnBackPressedDispatcher().onBackPressed();
+                    } else {
+                        lastBackPressedAt = now;
+                        Toast.makeText(MainActivity.this, R.string.press_back_again_to_exit, Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });
@@ -171,11 +195,16 @@ public class MainActivity extends AppCompatActivity {
         s.setDomStorageEnabled(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setAllowFileAccess(true);
+        s.setAllowFileAccessFromFileURLs(false);
+        s.setAllowUniversalAccessFromFileURLs(false);
+        s.setAllowContentAccess(true);
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
         s.setBuiltInZoomControls(false);
         s.setDisplayZoomControls(false);
-        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        }
         s.setUserAgentString(s.getUserAgentString() + " WallApp/1.1");
 
         CookieManager cm = CookieManager.getInstance();
@@ -199,6 +228,31 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @android.webkit.JavascriptInterface
+            public void sharePage(String url, String title) {
+                runOnUiThread(() -> sharePageLink(url, title));
+            }
+
+            @android.webkit.JavascriptInterface
+            public void openExternal(String url) {
+                runOnUiThread(() -> openExternalUrl(url));
+            }
+
+            @android.webkit.JavascriptInterface
+            public void copyLink(String url) {
+                runOnUiThread(() -> copyLinkToClipboard(url));
+            }
+
+            @android.webkit.JavascriptInterface
+            public void retryOnline() {
+                runOnUiThread(() -> loadOnlineHomeOrToast());
+            }
+
+            @android.webkit.JavascriptInterface
+            public void showAppActions() {
+                runOnUiThread(() -> showAppActionsDialog());
+            }
+
+            @android.webkit.JavascriptInterface
             public boolean isAndroid() { return true; }
         }, "AndroidDownloader");
 
@@ -218,19 +272,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                if (url.startsWith(APP_URL) || url.contains("backblazeb2.com") || url.startsWith("file:///android_asset/")) return false;
+                if (isTrustedInternalUrl(url)) return false;
                 
-                try {
-                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-                } catch (Exception e) {
-                    Toast.makeText(MainActivity.this, "No app found to open this link", Toast.LENGTH_SHORT).show();
-                }
+                openExternalUrl(url);
                 return true;
             }
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
-                if (!isNetworkAvailable()) {
+                if (request.isForMainFrame() && !isNetworkAvailable()) {
                     view.loadUrl(OFFLINE_URL);
                 }
             }
@@ -264,6 +314,18 @@ public class MainActivity extends AppCompatActivity {
                 "  };" +
                 "  window.nativeSetWallpaper = function(url) {" +
                 "    AndroidDownloader.setWallpaper(url);" +
+                "  };" +
+                "  window.nativeSharePage = function(url, title) {" +
+                "    AndroidDownloader.sharePage(url || location.href, title || document.title || 'WallApp');" +
+                "  };" +
+                "  window.nativeOpenExternal = function(url) {" +
+                "    AndroidDownloader.openExternal(url || location.href);" +
+                "  };" +
+                "  window.nativeCopyLink = function(url) {" +
+                "    AndroidDownloader.copyLink(url || location.href);" +
+                "  };" +
+                "  window.nativeShowAppActions = function() {" +
+                "    AndroidDownloader.showAppActions();" +
                 "  };" +
                 "  document.addEventListener('click', function(e) {" +
                 "    let t = e.target;" +
@@ -299,12 +361,22 @@ public class MainActivity extends AppCompatActivity {
                 "      AndroidDownloader.setWallpaper(el.dataset.setwallpaperUrl);" +
                 "    });" +
                 "  });" +
+                "  document.querySelectorAll('[data-share-page-url]').forEach(function(el) {" +
+                "    el.addEventListener('click', function(e) { e.stopPropagation();" +
+                "      AndroidDownloader.sharePage(el.dataset.sharePageUrl || location.href, el.dataset.shareTitle || document.title || 'WallApp');" +
+                "    });" +
+                "  });" +
+                "  document.querySelectorAll('[data-native-actions]').forEach(function(el) {" +
+                "    el.addEventListener('click', function(e) { e.stopPropagation();" +
+                "      AndroidDownloader.showAppActions();" +
+                "    });" +
+                "  });" +
                 "})();";
         webView.evaluateJavascript(script, null);
     }
 
     private void downloadFile(String url, String contentDisposition, String mimetype) {
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 &&
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
                 ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
             pendingDownloadUrl = url;
@@ -315,20 +387,19 @@ public class MainActivity extends AppCompatActivity {
         }
 
         try {
-            String filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
-            if (!filename.contains("."))
-                filename += (mimetype != null && mimetype.contains("png")) ? ".png" : ".jpg";
+            String filename = buildDownloadFileName(url, contentDisposition, mimetype);
 
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
             request.setMimeType(mimetype);
             request.setTitle(filename);
-            request.setDescription("Downloading wallpaper…");
+            request.setDescription("Saving to Pictures/WallApp");
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
 
             String cookies = CookieManager.getInstance().getCookie(url);
             if (cookies != null) request.addRequestHeader("Cookie", cookies);
             request.addRequestHeader("User-Agent", webView.getSettings().getUserAgentString());
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, filename);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES,
+                    WALLAPP_DOWNLOAD_DIR + File.separator + filename);
 
             DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
             if (dm != null) {
@@ -383,7 +454,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showSetWallpaperDialog(String url) {
-        new AlertDialog.Builder(this)
+        new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Set as wallpaper")
                 .setItems(new String[]{"Home screen", "Lock screen", "Both"}, (dialog, which) -> {
                     int flag;
@@ -420,9 +491,46 @@ public class MainActivity extends AppCompatActivity {
                     int len;
                     while ((len = in.read(buf)) != -1) out.write(buf, 0, len);
                 }
-                runOnUiThread(() -> launchCropIntent(tmpFile));
+                Bitmap preview = BitmapFactory.decodeFile(tmpFile.getAbsolutePath());
+                runOnUiThread(() -> showWallpaperPreview(tmpFile, preview));
             } catch (Exception e) {
                 runOnUiThread(() -> Toast.makeText(this, "Failed to download: " + e.getMessage(), Toast.LENGTH_LONG).show());
+            }
+        }).start();
+    }
+
+    private void showWallpaperPreview(File imageFile, Bitmap preview) {
+        if (preview == null) {
+            launchCropIntent(imageFile);
+            return;
+        }
+
+        ImageView imageView = new ImageView(this);
+        imageView.setImageBitmap(preview);
+        imageView.setAdjustViewBounds(true);
+        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        int padding = (int) (16 * getResources().getDisplayMetrics().density);
+        imageView.setPadding(padding, padding, padding, padding);
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.wallpaper_preview)
+                .setView(imageView)
+                .setPositiveButton(R.string.set_wallpaper, (dialog, which) -> launchCropIntent(imageFile))
+                .setNeutralButton(R.string.set_directly, (dialog, which) -> setWallpaperDirectly(imageFile))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void setWallpaperDirectly(File imageFile) {
+        Toast.makeText(this, "Setting wallpaper…", Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try (InputStream in = getContentResolver().openInputStream(
+                    FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", imageFile))) {
+                Bitmap bmp = BitmapFactory.decodeStream(in);
+                WallpaperManager.getInstance(this).setBitmap(bmp, null, true, pendingWallpaperFlags);
+                runOnUiThread(() -> Toast.makeText(this, "Wallpaper set!", Toast.LENGTH_SHORT).show());
+            } catch (Exception ex) {
+                runOnUiThread(() -> Toast.makeText(this, "Failed: " + ex.getMessage(), Toast.LENGTH_LONG).show());
             }
         }).start();
     }
@@ -463,12 +571,136 @@ public class MainActivity extends AppCompatActivity {
     private boolean isNetworkAvailable() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) return false;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            NetworkInfo info = cm.getActiveNetworkInfo();
+            return info != null && info.isConnected();
+        }
         Network network = cm.getActiveNetwork();
         if (network == null) return false;
         NetworkCapabilities caps = cm.getNetworkCapabilities(network);
         return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+    }
+
+    private String getInitialUrl(Intent intent) {
+        Uri data = intent != null ? intent.getData() : null;
+        if (data != null && "thewallapp.pages.dev".equalsIgnoreCase(data.getHost())) {
+            return data.toString();
+        }
+        return APP_URL;
+    }
+
+    private boolean isTrustedInternalUrl(String url) {
+        return url.startsWith(APP_URL) ||
+                url.contains("backblazeb2.com") ||
+                url.contains("res.cloudinary.com") ||
+                url.startsWith("file:///android_asset/");
+    }
+
+    private String buildDownloadFileName(String url, String contentDisposition, String mimetype) {
+        String guessed = URLUtil.guessFileName(url, contentDisposition, mimetype);
+        String safeName = guessed.replaceAll("[^a-zA-Z0-9._\\-]", "_");
+        String lower = safeName.toLowerCase(Locale.US);
+        if (!lower.matches(".*\\.(jpg|jpeg|png|webp)$")) {
+            if (mimetype != null && mimetype.contains("png")) {
+                safeName += ".png";
+            } else if (mimetype != null && mimetype.contains("webp")) {
+                safeName += ".webp";
+            } else {
+                safeName += ".jpg";
+            }
+        }
+        if (!safeName.toLowerCase(Locale.US).startsWith("wallapp_")) {
+            safeName = "wallapp_" + safeName;
+        }
+        return safeName;
+    }
+
+    private void sharePageLink(String url, String title) {
+        String link = (url == null || url.trim().isEmpty()) ? webView.getUrl() : url;
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_SUBJECT, title == null ? "WallApp" : title);
+        intent.putExtra(Intent.EXTRA_TEXT, (title == null ? "WallApp" : title) + "\n" + link);
+        startActivity(Intent.createChooser(intent, "Share WallApp"));
+    }
+
+    private void openExternalUrl(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception e) {
+            Toast.makeText(this, "No app found to open this link", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void copyLinkToClipboard(String url) {
+        String link = (url == null || url.trim().isEmpty()) ? webView.getUrl() : url;
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (clipboard != null && link != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText("WallApp link", link));
+            Toast.makeText(this, R.string.link_copied, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void loadOnlineHomeOrToast() {
+        if (isNetworkAvailable()) {
+            webView.loadUrl(APP_URL);
+        } else {
+            Toast.makeText(this, R.string.no_internet, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showAppActionsDialog() {
+        String[] actions = new String[]{
+                getString(R.string.share_page),
+                getString(R.string.open_in_browser),
+                getString(R.string.copy_link),
+                getString(R.string.clear_cache),
+                getString(R.string.about_wallapp)
+        };
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.app_actions)
+                .setItems(actions, (dialog, which) -> {
+                    String currentUrl = webView.getUrl() == null ? APP_URL : webView.getUrl();
+                    switch (which) {
+                        case 0:
+                            sharePageLink(currentUrl, webView.getTitle());
+                            break;
+                        case 1:
+                            openExternalUrl(currentUrl);
+                            break;
+                        case 2:
+                            copyLinkToClipboard(currentUrl);
+                            break;
+                        case 3:
+                            webView.clearCache(true);
+                            CookieManager.getInstance().flush();
+                            Toast.makeText(this, R.string.cache_cleared, Toast.LENGTH_SHORT).show();
+                            break;
+                        case 4:
+                            showAboutDialog();
+                            break;
+                        default:
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void showAboutDialog() {
+        String version = "1.1.1";
+        try {
+            version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException ignored) {
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.about_wallapp)
+                .setMessage("WallApp " + version + "\n\nhttps://thewallapp.pages.dev")
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     private void checkStoragePermission() {

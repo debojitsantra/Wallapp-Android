@@ -270,7 +270,7 @@
         <h1>You're Offline</h1>
         <p>Looks like you've lost your internet connection. Check your network settings and try again.</p>
 
-        <button class="retry-btn" onclick="location.reload()">
+        <button class="retry-btn" onclick="retryOnline()">
             Retry
         </button>
     </div>
@@ -288,7 +288,15 @@
       document.body.classList.add('dark-mode');
     }
 
-    window.addEventListener('online', () => location.reload());
+    function retryOnline() {
+      if (window.AndroidDownloader && AndroidDownloader.retryOnline) {
+        AndroidDownloader.retryOnline();
+      } else {
+        location.href = 'https://thewallapp.pages.dev/';
+      }
+    }
+
+    window.addEventListener('online', retryOnline);
 </script>
 </body>
 

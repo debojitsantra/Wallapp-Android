@@ -5,7 +5,19 @@
     <string name="no_internet">No internet connection</string>
     <string name="retry">Retry</string>
     <string name="exit">Exit</string>
+    <string name="press_back_again_to_exit">Press back again to exit</string>
     <string name="download_started">Download started</string>
     <string name="download_failed">Download failed</string>
     <string name="permission_required">Storage permission required for downloading wallpapers</string>
+    <string name="link_copied">Link copied</string>
+    <string name="wallpaper_preview">Wallpaper preview</string>
+    <string name="set_wallpaper">Set wallpaper</string>
+    <string name="set_directly">Set directly</string>
+    <string name="app_actions">App actions</string>
+    <string name="share_page">Share page</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="copy_link">Copy link</string>
+    <string name="clear_cache">Clear cache</string>
+    <string name="about_wallapp">About WallApp</string>
+    <string name="cache_cleared">Cache cleared</string>
 </resources>
