@@ -36,6 +36,7 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -90,6 +91,22 @@ public class MainActivity extends AppCompatActivity {
     private SwipeRefreshLayout swipeRefreshLayout;
     private long lastBackPressedAt;
     private Typeface instrumentSerifTypeface;
+    private boolean isShowingOfflinePage;
+    private boolean networkCallbackRegistered;
+
+    private final ConnectivityManager.NetworkCallback networkCallback =
+            new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(@NonNull Network network) {
+                    reloadAfterConnectionRestored();
+                }
+
+                @Override
+                public void onCapabilitiesChanged(@NonNull Network network,
+                                                  @NonNull NetworkCapabilities capabilities) {
+                    reloadAfterConnectionRestored();
+                }
+            };
 
     private ActivityResultLauncher<String> requestPermissionLauncher;
     private ActivityResultLauncher<Intent> cropActivityResultLauncher;
@@ -106,6 +123,7 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         webView = findViewById(R.id.webView);
+        webView.setBackgroundColor(Color.WHITE);
         progressBar = findViewById(R.id.progressBar);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
 
@@ -130,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
             if (isNetworkAvailable()) {
                 webView.loadUrl(initialUrl);
             } else {
-                webView.loadUrl(OFFLINE_URL);
+                showOfflinePage();
             }
         }
 
@@ -298,8 +316,11 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, android.webkit.WebResourceError error) {
-                if (request.isForMainFrame() && !isNetworkAvailable()) {
-                    view.loadUrl(OFFLINE_URL);
+                if (request.isForMainFrame() && !OFFLINE_URL.equals(request.getUrl().toString())) {
+                    // A network can be connected but not yet usable (for example while Wi-Fi
+                    // is validating). Always replace a failed main page with our local page
+                    // instead of leaving WebView on its blank error surface.
+                    showOfflinePage();
                 }
             }
         });
@@ -687,9 +708,14 @@ public class MainActivity extends AppCompatActivity {
         Network network = cm.getActiveNetwork();
         if (network == null) return false;
         NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+        if (caps == null || !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
+            return false;
+        }
+        // On Android 6+ wait until the system has verified that the network can
+        // reach the internet. This avoids loading the site into a blank error page
+        // during the short interval immediately after a connection is enabled.
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
     }
 
     private String getInitialUrl(Intent intent) {
@@ -804,6 +830,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadOnlineHomeOrToast() {
         if (isNetworkAvailable()) {
+            isShowingOfflinePage = false;
             webView.loadUrl(APP_URL);
         } else {
             Toast.makeText(this, R.string.no_internet, Toast.LENGTH_SHORT).show();
@@ -869,11 +896,66 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void showOfflinePage() {
+        if (webView == null || OFFLINE_URL.equals(webView.getUrl())) return;
+        isShowingOfflinePage = true;
+        webView.stopLoading();
+        webView.loadUrl(OFFLINE_URL);
+    }
+
+    private void reloadAfterConnectionRestored() {
+        runOnUiThread(() -> {
+            if (webView != null && isShowingOfflinePage && isNetworkAvailable()) {
+                isShowingOfflinePage = false;
+                webView.loadUrl(APP_URL);
+            }
+        });
+    }
+
+    private void registerNetworkCallback() {
+        if (networkCallbackRegistered) return;
+        ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (manager == null) return;
+        try {
+            NetworkRequest request = new NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build();
+            manager.registerNetworkCallback(request, networkCallback);
+            networkCallbackRegistered = true;
+        } catch (SecurityException ignored) {
+            // ACCESS_NETWORK_STATE is declared, but keep the app usable if a device rejects it.
+        }
+    }
+
+    private void unregisterNetworkCallback() {
+        if (!networkCallbackRegistered) return;
+        ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (manager != null) {
+            try {
+                manager.unregisterNetworkCallback(networkCallback);
+            } catch (IllegalArgumentException ignored) {
+                // The system already removed the callback.
+            }
+        }
+        networkCallbackRegistered = false;
+    }
+
+    @Override protected void onStart() {
+        super.onStart();
+        registerNetworkCallback();
+    }
+
+    @Override protected void onStop() {
+        unregisterNetworkCallback();
+        super.onStop();
+    }
+
     @Override protected void onPause() { super.onPause(); webView.onPause(); }
     @Override protected void onResume() {
         super.onResume();
         webView.onResume();
-        if (OFFLINE_URL.equals(webView.getUrl()) && isNetworkAvailable()) {
+        if ((isShowingOfflinePage || OFFLINE_URL.equals(webView.getUrl())) && isNetworkAvailable()) {
+            isShowingOfflinePage = false;
             webView.loadUrl(APP_URL);
         }
     }
